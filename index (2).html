@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#08070b">
+<title>Yüzyılın Aşkı</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08070b}
+body{display:grid;place-items:center}
+#game{position:relative;width:min(100vw,calc(100svh * 941 / 1672));height:min(100svh,calc(100vw * 1672 / 941));aspect-ratio:941/1672;overflow:hidden;background:#08070b;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.layer{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+.scene{z-index:1;opacity:0;pointer-events:none;transition:opacity .58s ease,transform 2.5s ease}
+.scene.active{opacity:1}
+.scene.softzoom{transform:scale(1.012)}
+.panel{position:absolute;z-index:12;left:2.2%;width:95.5%;object-fit:fill;opacity:0;pointer-events:none;transform:translateY(16%) scale(.88);transform-origin:center bottom;filter:drop-shadow(0 14px 26px rgba(0,0,0,.42))}
+#panel1{top:67.3%;height:28.45%}
+#panel2{top:67.1%;height:28.7%}
+#panel3{top:71.1%;height:25.0%}
+.panel.pop{animation:popupIn .72s cubic-bezier(.18,.92,.28,1.16) forwards}
+@keyframes popupIn{0%{opacity:0;transform:translateY(18%) scale(.86)}62%{opacity:1;transform:translateY(-1.8%) scale(1.022)}82%{transform:translateY(.8%) scale(.993)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.hotspot{position:absolute;z-index:18;border:0;padding:0;margin:0;background:transparent;border-radius:24px;cursor:pointer;pointer-events:none;touch-action:manipulation}
+.hotspot.ready{pointer-events:auto}
+.hotspot::after{content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;box-shadow:inset 0 0 0 3px rgba(255,255,255,.95),0 0 28px rgba(187,91,255,.92);transition:opacity .1s ease}
+.hotspot:active::after{opacity:1}
+#firstYes{left:35.4%;top:85.0%;width:27.0%;height:7.0%}
+#firstNo{left:64.2%;top:85.0%;width:26.6%;height:7.0%}
+#secondBad{left:35.2%;top:87.6%;width:27.4%;height:5.9%}
+#secondGood{left:63.9%;top:87.6%;width:28.3%;height:5.9%}
+#thirdGive{left:28.0%;top:86.8%;width:25.7%;height:6.6%}
+#thirdLeave{left:55.0%;top:86.8%;width:35.0%;height:6.6%}
+
+#shade{position:absolute;inset:0;z-index:30;background:#08070b;opacity:0;pointer-events:none;transition:opacity .36s ease}
+#shade.on{opacity:1}
+#fail{z-index:50;opacity:0;pointer-events:none;transition:opacity .46s ease}
+#fail.show{opacity:1;pointer-events:auto}
+#retry{position:absolute;z-index:55;left:13.5%;top:88.2%;width:73%;height:7.0%;border:0;background:transparent;border-radius:34px;display:none;cursor:pointer}
+#retry.show{display:block}
+
+#loveHud{position:absolute;z-index:16;left:8%;right:8%;top:62.9%;opacity:0;transform:translateY(12px);pointer-events:none}
+#loveHud.show{animation:hudIn .42s ease forwards}
+@keyframes hudIn{to{opacity:1;transform:none}}
+.loveRow{display:flex;align-items:center;gap:10px}
+.loveLabel{color:#ffb7d1;font-weight:900;font-size:clamp(14px,4vw,22px);letter-spacing:.3px;text-shadow:0 0 8px #ff4fa4,0 2px 4px #000}
+.loveTrack{position:relative;flex:1;height:26px;border-radius:999px;background:rgba(11,11,17,.78);border:2px solid #ffb3d0;box-shadow:0 0 12px rgba(255,87,159,.45),inset 0 0 8px rgba(0,0,0,.8);overflow:hidden}
+.loveFill{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,#ff5b9d,#ff9bc2);box-shadow:0 0 18px rgba(255,85,159,.9);transition:width 1.15s cubic-bezier(.16,.9,.23,1)}
+.lovePct{color:#fff0f6;font-weight:900;font-size:clamp(13px,3.7vw,20px);min-width:48px;text-align:right;text-shadow:0 2px 5px #000}
+#plus20{position:absolute;z-index:17;left:50%;top:58.5%;transform:translate(-50%,20px) scale(.7);color:#fff4f8;background:rgba(102,23,63,.84);border:2px solid #ff9ac2;border-radius:14px;padding:8px 13px;font-weight:1000;font-size:clamp(22px,7vw,38px);text-shadow:0 0 8px #ff4f9b;box-shadow:0 0 24px rgba(255,75,149,.72);opacity:0;pointer-events:none}
+#plus20.pop{animation:plusPop 1.25s ease forwards}
+@keyframes plusPop{0%{opacity:0;transform:translate(-50%,20px) scale(.65)}25%{opacity:1;transform:translate(-50%,-4px) scale(1.12)}55%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-22px) scale(.94)}}
+
+#restartAlways{position:absolute;z-index:70;right:4%;bottom:2.2%;padding:8px 12px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:rgba(9,9,14,.48);color:#fff7fb;font-size:11px;font-weight:700;backdrop-filter:blur(8px);display:none}
+#restartAlways.show{display:block}
+#status{position:absolute;z-index:35;left:50%;bottom:1.3%;transform:translateX(-50%) translateY(8px);color:#fff;background:rgba(45,17,58,.84);border:1px solid rgba(226,189,255,.5);border-radius:999px;padding:7px 12px;font-size:10px;font-weight:750;white-space:nowrap;opacity:0;pointer-events:none;backdrop-filter:blur(8px)}
+#status.show{animation:status 1.35s ease forwards}
+@keyframes status{0%{opacity:0}15%,75%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0}}
+
+/* 5A — Mesajlaşma kolu: Gamze'nin karnı gurulduyor */
+#sceneHunger, #sceneLeaveQ{z-index:2}
+#panelHunger{
+  top:67.6%; left:5.1%; width:89.7%; height:27.7%;
+}
+#panelLeaveQ{
+  top:66.7%; left:2.6%; width:95.2%; height:29.2%;
+}
+#hungerEat{left:9.3%;top:80.2%;width:78.3%;height:6.2%}
+#hungerContinue{left:9.3%;top:87.0%;width:78.3%;height:6.4%}
+#leaveSleep{left:30.8%;top:85.4%;width:28.5%;height:7.2%}
+#leaveOtherRoom{left:60.7%;top:85.4%;width:31.6%;height:7.2%}
+
+
+
+/* ===== V7: Giriş ekranı ===== */
+#sceneIntro{z-index:5}
+#introStart{
+  left:21.5%; top:76.6%; width:57.0%; height:10.6%;
+  z-index:26;
+}
+
+/* ===== V6: Açlık + final evlilik zinciri ===== */
+#sceneKisir,#sceneStarve,#sceneHappyEnd{z-index:3}
+#sceneHappyEnd{z-index:60}
+
+#starveRetry{left:9.0%;top:80.0%;width:78.5%;height:6.4%}
+#starveGiveUp{left:9.0%;top:87.2%;width:78.5%;height:6.4%}
+
+/* Ana soru şablonumuzun final zincirinde dinamik kullanılan hali */
+#proposalWrap{
+  position:absolute;z-index:24;
+  left:2.2%;right:2.2%;bottom:3.8%;
+  height:30.5%;
+  opacity:0;pointer-events:none;
+  transform:translateY(18%) scale(.87);
+  transform-origin:center bottom;
+  filter:drop-shadow(0 14px 26px rgba(0,0,0,.42));
+}
+#proposalWrap.pop{
+  animation:popupIn .72s cubic-bezier(.18,.92,.28,1.16) forwards;
+  pointer-events:auto;
+}
+#proposalBg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;border-radius:26px}
+#proposalQuestion{
+  position:absolute;left:34%;right:5%;top:15%;
+  color:#221427;text-align:center;
+  font-weight:800;font-size:clamp(15px,4vw,22px);line-height:1.24;
+  text-shadow:0 1px 0 rgba(255,255,255,.7);
+}
+.proposalChoice{
+  position:absolute;top:69%;height:18.5%;
+  border:0;background:transparent;color:white;
+  font:800 clamp(12px,3.35vw,18px)/1.12 system-ui,-apple-system,"Segoe UI",sans-serif;
+  text-align:center;padding:4px 10px;cursor:pointer;
+  text-shadow:0 2px 5px rgba(34,0,60,.55);
+}
+#proposalA{left:34.1%;width:28.2%}
+#proposalB{left:65.0%;width:28.4%}
+#proposalSingleCover{
+  display:none;position:absolute;left:64.2%;top:67%;width:30.2%;height:22%;
+  border-radius:22px;background:linear-gradient(145deg,#fff8fb,#fdeef6);
+  box-shadow:inset 0 0 0 1px rgba(255,100,180,.10);
+}
+#proposalWrap.single #proposalSingleCover{display:block}
+#proposalWrap.single #proposalB{display:none}
+#proposalWrap.single #proposalA{
+  left:43%;width:43%;font-size:clamp(12px,3.45vw,18px)
+}
+
+#loveHud.finalMode{top:59.5%}
+#plus20.finalMode{top:55.3%}
+
+#endRestart{
+  position:absolute;z-index:75;left:50%;bottom:2.4%;transform:translateX(-50%);
+  display:none;border:1px solid rgba(255,255,255,.65);border-radius:999px;
+  padding:9px 16px;background:rgba(85,28,47,.48);color:#fff;font-weight:800;
+  backdrop-filter:blur(8px)
+}
+#endRestart.show{display:block}
+
+@media(min-width:700px){#game{box-shadow:0 0 90px rgba(0,0,0,.76)}}
+</style>
+</head>
+<body>
+<main id="game">
+  <!-- Giriş ekranı -->
+  <img id="sceneIntro" class="layer scene active" src="assets/asset_01_68465da891de.png" alt="Yüzyılın Aşkı giriş ekranı">
+  <button id="introStart" class="hotspot ready" aria-label="Oyuna başla"></button>
+
+  <!-- 1. ekran -->
+  <img id="scene1" class="layer scene" src="assets/asset_02_a4ea9d1fda19.jpg" alt="İlk sahne">
+  <img id="panel1" class="panel" src="assets/asset_03_f8cb8c55ce10.jpg" alt="Oyuna katılmak ister misin?">
+  <button id="firstYes" class="hotspot" aria-label="Evet, Eren'in karşısına otur"></button>
+  <button id="firstNo" class="hotspot" aria-label="Hayır, belki başka zaman"></button>
+
+  <!-- 2. ekran -->
+  <img id="scene2n" class="layer scene" src="assets/asset_04_a60896be4a2d.jpg" alt="Dört kişi okey oynuyor">
+  <img id="scene2r" class="layer scene" src="assets/asset_05_71925d9c3cc7.jpg" alt="Eren yanlış taş attı">
+  <img id="panel2" class="panel" src="assets/asset_06_93aaffedecfd.jpg" alt="İkinci seçim">
+  <button id="secondBad" class="hotspot" aria-label="Ona gül ve dalga geç"></button>
+  <button id="secondGood" class="hotspot" aria-label="Onun yanında dur ve ona destek çık"></button>
+
+  <!-- 3. ekran -->
+  <img id="scene3" class="layer scene" src="assets/asset_07_3d9bd8b86d24.jpg" alt="Eren Gamze'ye aşkla bakıyor">
+  <div id="plus20">+20</div>
+  <div id="loveHud"><div class="loveRow"><div class="loveLabel">AŞK</div><div class="loveTrack"><div id="loveFill" class="loveFill"></div></div><div id="lovePct" class="lovePct">0%</div></div></div>
+  <img id="panel3" class="panel" src="assets/asset_08_a5171300b68c.jpg" alt="Instagram sorusu">
+  <button id="thirdGive" class="hotspot" aria-label="Ona hesabını ver ve oyundan çık"></button>
+  <button id="thirdLeave" class="hotspot" aria-label="Eren'in söylediği şeyi duymadan başka bir lobiye git"></button>
+
+  <!-- 4A. ekran: Instagram verildi -->
+  <img id="sceneGive" class="layer scene" src="assets/asset_09_897639784639.png" alt="Eren ve Gamze mesajlaşıyor">
+
+  <!-- 4B. ekran: Masadan kalktı -->
+
+  <!-- 5A. ekran: Mesajlaşma devam ederken Gamze'nin karnı gurulduyor -->
+  <img id="sceneHunger" class="layer scene" src="assets/asset_10_1aca00c704cd.jpg" alt="Gamze'nin karnı gurulduyor">
+  <img id="panelHunger" class="panel" src="assets/asset_11_4b69dce0ef5f.png" alt="Karnın gurulduyor. Ne yaparsın?">
+  <button id="hungerEat" class="hotspot" aria-label="Kısır ye"></button>
+  <button id="hungerContinue" class="hotspot" aria-label="Hiçbir şey yeme ve konuşmaya devam et"></button>
+
+  <!-- 5B. ekran: Masadan ayrıldıktan sonraki son seçim -->
+  <img id="sceneLeaveQ" class="layer scene" src="assets/asset_12_f97296e6c637.jpg" alt="Gamze telefona bakarken arka plan flu">
+  <img id="panelLeaveQ" class="panel" src="assets/asset_13_7a7bc909bf68.png" alt="Bu geceye nasıl devam etmek istersin?">
+  <button id="leaveSleep" class="hotspot" aria-label="Uyumak için yatağa git"></button>
+  <button id="leaveOtherRoom" class="hotspot" aria-label="Oyuna başka bir odada devam et"></button>
+  <img id="sceneLeave" class="layer scene" src="assets/asset_14_f58ee8865bcb.png" alt="Gamze masadan ayrıldı">
+
+
+  <!-- 6A: Kısır yenildi — %40 -> %70 ve final evlilik sorusu -->
+  <img id="sceneKisir" class="layer scene" src="assets/asset_15_4c54b06b1fea.png" alt="Gamze telefonda konuşurken kısır yiyor">
+
+  <!-- 6B: Hiçbir şey yemedi — tekrar düşün / pes et -->
+  <img id="sceneStarve" class="layer scene" src="assets/asset_16_07ec8bd13f5c.png" alt="Gamze çok acıkmış halde karnını tutuyor">
+  <button id="starveRetry" class="hotspot" aria-label="Tekrar düşün"></button>
+  <button id="starveGiveUp" class="hotspot" aria-label="Pes et"></button>
+
+  <!-- Final soru zinciri: aynı ana soru şablonu, metinler dinamik değişiyor -->
+  <div id="proposalWrap" aria-live="polite">
+    <img id="proposalBg" src="assets/asset_17_e31e1555c5a3.png" alt="">
+    <div id="proposalQuestion"></div>
+    <button id="proposalA" class="proposalChoice"></button>
+    <button id="proposalB" class="proposalChoice"></button>
+    <div id="proposalSingleCover"></div>
+  </div>
+
+  <!-- %100 nihai başarı ekranı -->
+  <img id="sceneHappyEnd" class="layer scene" src="assets/asset_18_2ac3a2e249e8.webp" alt="Mutlu Son">
+  <button id="endRestart" aria-label="Başa dön">↺ Başa dön</button>
+
+  <!-- kaybetme -->
+  <img id="fail" class="layer" src="assets/asset_19_e750f0b88aa1.webp" alt="Hayatının aşkını kaçırdın">
+  <button id="retry" aria-label="Tekrar dene"></button>
+
+  <button id="restartAlways" aria-label="Başa dön">↺ Başa dön</button>
+  <div id="shade"></div>
+  <div id="status">♥ Seçim kaydedildi</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const sIntro=$('sceneIntro'), introStart=$('introStart');
+const s1=$('scene1'),p1=$('panel1'),yes1=$('firstYes'),no1=$('firstNo');
+const s2n=$('scene2n'),s2r=$('scene2r'),p2=$('panel2'),bad2=$('secondBad'),good2=$('secondGood');
+const s3=$('scene3'),p3=$('panel3'),give3=$('thirdGive'),leave3=$('thirdLeave');
+const sGive=$('sceneGive'), sLeave=$('sceneLeave');
+const sHunger=$('sceneHunger'), pHunger=$('panelHunger'), hungerEat=$('hungerEat'), hungerContinue=$('hungerContinue');
+const sKisir=$('sceneKisir'), sStarve=$('sceneStarve'), starveRetry=$('starveRetry'), starveGiveUp=$('starveGiveUp');
+const proposalWrap=$('proposalWrap'), proposalQuestion=$('proposalQuestion'), proposalA=$('proposalA'), proposalB=$('proposalB');
+const sHappyEnd=$('sceneHappyEnd'), endRestart=$('endRestart');
+const sLeaveQ=$('sceneLeaveQ'), pLeaveQ=$('panelLeaveQ'), leaveSleep=$('leaveSleep'), leaveOtherRoom=$('leaveOtherRoom');
+const fail=$('fail'),retry=$('retry'),shade=$('shade'),loveHud=$('loveHud'),loveFill=$('loveFill'),lovePct=$('lovePct'),plus20=$('plus20'),status=$('status'),restartAlways=$('restartAlways');
+
+let timers=[];
+function later(fn,ms){const t=setTimeout(fn,ms);timers.push(t);return t}
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+function ready(btn,on=true){btn.classList.toggle('ready',on)}
+function pop(panel,buttons){panel.classList.remove('pop');panel.style.opacity='';void panel.offsetWidth;panel.classList.add('pop');later(()=>buttons.forEach(b=>ready(b,true)),590);}
+function resetScenes(){[sIntro,s1,s2n,s2r,s3,sGive,sLeave,sHunger,sLeaveQ,sKisir,sStarve,sHappyEnd].forEach(s=>s.classList.remove('active','softzoom'));}
+function lose(){clearTimers();[yes1,no1,bad2,good2,give3,leave3,hungerEat,hungerContinue,leaveSleep,leaveOtherRoom,starveRetry,starveGiveUp].forEach(b=>ready(b,false));[p1,p2,p3].forEach(p=>p.classList.remove('pop'));fail.classList.add('show');retry.classList.add('show');restartAlways.classList.add('show');}
+function transition(fn){shade.classList.add('on');later(()=>{fn();shade.classList.remove('on')},380);}
+function start(){
+  clearTimers();
+  fail.classList.remove('show');retry.classList.remove('show');shade.classList.remove('on');
+  restartAlways.classList.remove('show');status.classList.remove('show');
+  resetScenes();
+  [p1,p2,p3,pHunger,pLeaveQ].forEach(p=>{p.classList.remove('pop');p.style.opacity=''});
+  [yes1,no1,bad2,good2,give3,leave3,hungerEat,hungerContinue,leaveSleep,leaveOtherRoom,starveRetry,starveGiveUp].forEach(b=>ready(b,false));
+  loveHud.classList.remove('show','finalMode');
+  plus20.classList.remove('pop','finalMode');
+  plus20.textContent='+20';
+  loveFill.style.width='0%';lovePct.textContent='0%';
+  proposalWrap.classList.remove('pop','single');
+  proposalWrap.style.opacity='';
+  proposalA.disabled=false;proposalB.disabled=false;
+  starveRetry.classList.remove('ready');starveGiveUp.classList.remove('ready');
+  endRestart.classList.remove('show');
+
+  // Giriş ekranı
+  sIntro.classList.add('active');
+  ready(introStart,true);
+}
+
+function beginStory(){
+  ready(introStart,false);
+  transition(()=>{
+    resetScenes();
+    s1.classList.add('active');
+    later(()=>s1.classList.add('softzoom'),250);
+    later(()=>pop(p1,[yes1,no1]),1450);
+  });
+}
+
+function toSecond(){
+  ready(yes1,false);ready(no1,false);p1.classList.remove('pop');
+  transition(()=>{
+    resetScenes(); s2n.classList.add('active');
+    later(()=>s2n.classList.add('softzoom'),250);
+    later(()=>{s2n.classList.remove('active'); s2r.classList.add('active'); later(()=>pop(p2,[bad2,good2]),950);},1750);
+  });
+}
+function toThird(){
+  ready(bad2,false);ready(good2,false);p2.classList.remove('pop');
+  transition(()=>{
+    resetScenes(); s3.classList.add('active');
+    loveFill.style.width='0%';lovePct.textContent='0%';
+    later(()=>loveHud.classList.add('show'),500);
+    later(()=>{plus20.classList.remove('pop');void plus20.offsetWidth;plus20.classList.add('pop');loveFill.style.width='20%';let n=0;const iv=setInterval(()=>{n++;lovePct.textContent=n+'%';if(n>=20)clearInterval(iv)},42);},1000);
+    later(()=>pop(p3,[give3,leave3]),2550);
+  });
+}
+function toGive(){
+  ready(give3,false); ready(leave3,false); p3.classList.remove('pop');
+  transition(()=>{
+    resetScenes();
+    sGive.classList.add('active');
+
+    // Instagram verildi: aşk 20 -> 40, aynı +20 popup animasyonu.
+    loveHud.classList.add('show');
+    loveFill.style.width='20%';
+    lovePct.textContent='20%';
+
+    later(()=>{
+      plus20.classList.remove('pop');
+      void plus20.offsetWidth;
+      plus20.classList.add('pop');
+      loveFill.style.width='40%';
+
+      let n=20;
+      const iv=setInterval(()=>{
+        n++;
+        lovePct.textContent=n+'%';
+        if(n>=40) clearInterval(iv);
+      },42);
+    },700);
+
+    // Mesajların okunabilmesi için kısa süre ekranda kalır, sonra açlık sahnesi gelir.
+    later(()=>{
+      transition(()=>{
+        loveHud.classList.remove('show');
+        resetScenes();
+        sHunger.classList.add('active');
+        later(()=>pop(pHunger,[hungerEat,hungerContinue]),1100);
+      });
+    },4100);
+  });
+}
+
+function toLeave(){
+  ready(give3,false); ready(leave3,false); p3.classList.remove('pop');
+  transition(()=>{
+    resetScenes();
+    sLeave.classList.add('active');
+
+    // Önce daha önce onaylanan masadan ayrılma ekranı görünür.
+    // Sonra aynı sahnenin seçimli versiyonu popup olur.
+    later(()=>{
+      transition(()=>{
+        resetScenes();
+        sLeaveQ.classList.add('active');
+        later(()=>pop(pLeaveQ,[leaveSleep,leaveOtherRoom]),950);
+      });
+    },1800);
+  });
+}
+
+introStart.addEventListener('click',beginStory);
+yes1.addEventListener('click',toSecond);
+no1.addEventListener('click',lose);
+bad2.addEventListener('click',lose);
+good2.addEventListener('click',toThird);
+give3.addEventListener('click',toGive);
+leave3.addEventListener('click',toLeave);
+
+function animateLove(from,to,delta,after){
+  loveHud.classList.add('show','finalMode');
+  plus20.classList.add('finalMode');
+  loveFill.style.width=from+'%';
+  lovePct.textContent=from+'%';
+
+  later(()=>{
+    plus20.textContent=(delta>0?'+':'')+delta;
+    plus20.classList.remove('pop');
+    void plus20.offsetWidth;
+    plus20.classList.add('pop');
+    loveFill.style.width=to+'%';
+
+    let n=from;
+    const dir=to>=from?1:-1;
+    const iv=setInterval(()=>{
+      n+=dir;
+      lovePct.textContent=n+'%';
+      if(n===to){
+        clearInterval(iv);
+        if(after) later(after,450);
+      }
+    },36);
+  },450);
+}
+
+const proposalSteps = [
+  {
+    q:"Eren senin kısır yiyişine aşık oldu ve seninle evlenmek istiyor. Ne dersin?",
+    a:"EVET, EVET, EVET!!!",
+    b:"Bilmiyorum, düşüneceğim",
+    yes:true
+  },
+  {
+    q:"Birazdan mı düşüneceksin?",
+    a:"Hayır, seninle evleneceğim",
+    b:"Evet, biraz daha düşüneceğim",
+    yes:true
+  },
+  {
+    q:"Çok mu eminsin?",
+    a:"Hayır, seninle evleneceğim",
+    b:"Evet, çok eminim",
+    yes:true
+  },
+  {
+    q:"Ne kadar eminsin?",
+    a:"Hayır, seninle evleneceğim",
+    b:"Çok eminim",
+    yes:true
+  },
+  {
+    q:"Ne kadar eminsin?",
+    a:"Hayır, seninle evleneceğim",
+    b:"ÇOK eminim",
+    yes:true
+  },
+  {
+    q:"Ne kadar eminsin?",
+    a:"Hayır, seninle evleneceğim",
+    b:"ÇOK ÇOK eminim",
+    yes:true
+  },
+  {
+    q:"Peki... artık başka seçenek bırakmadın.",
+    a:"EVET, SENİNLE EVLENECEĞİM!",
+    b:"",
+    single:true
+  }
+];
+
+let proposalIndex=0;
+
+function renderProposal(index){
+  proposalIndex=index;
+  const step=proposalSteps[index];
+  proposalQuestion.textContent=step.q;
+  proposalA.textContent=step.a;
+  proposalB.textContent=step.b || '';
+  proposalWrap.classList.toggle('single',!!step.single);
+  proposalWrap.classList.remove('pop');
+  proposalWrap.style.opacity='';
+  void proposalWrap.offsetWidth;
+  proposalWrap.classList.add('pop');
+}
+
+function hideProposal(){
+  proposalWrap.classList.remove('pop');
+  proposalWrap.style.opacity='0';
+}
+
+function winGame(){
+  hideProposal();
+  proposalA.disabled=true; proposalB.disabled=true;
+
+  // Final doğru cevap: %70 -> %100, +30 popup, sonra onaylanan Mutlu Son.
+  animateLove(70,100,30,()=>{
+    transition(()=>{
+      loveHud.classList.remove('show','finalMode');
+      plus20.classList.remove('finalMode');
+      resetScenes();
+      sHappyEnd.classList.add('active');
+      endRestart.classList.add('show');
+    });
+  });
+}
+
+function chooseProposalA(){
+  winGame();
+}
+function chooseProposalB(){
+  if(proposalIndex < proposalSteps.length-1){
+    renderProposal(proposalIndex+1);
+  }
+}
+
+function goKisir(){
+  ready(hungerEat,false); ready(hungerContinue,false);
+  pHunger.classList.remove('pop');
+
+  transition(()=>{
+    resetScenes();
+    sKisir.classList.add('active');
+
+    // Kısır seçimi: %40 -> %70
+    animateLove(40,70,30,()=>{
+      renderProposal(0);
+    });
+  });
+}
+
+function goStarve(){
+  ready(hungerEat,false); ready(hungerContinue,false);
+  pHunger.classList.remove('pop');
+
+  transition(()=>{
+    resetScenes();
+    sStarve.classList.add('active');
+    later(()=>{
+      ready(starveRetry,true);
+      ready(starveGiveUp,true);
+    },450);
+  });
+}
+
+function backToHunger(){
+  ready(starveRetry,false); ready(starveGiveUp,false);
+  transition(()=>{
+    resetScenes();
+    sHunger.classList.add('active');
+    loveHud.classList.remove('show','finalMode');
+    plus20.classList.remove('finalMode');
+    later(()=>pop(pHunger,[hungerEat,hungerContinue]),700);
+  });
+}
+
+function giveUpFromHunger(){
+  ready(starveRetry,false); ready(starveGiveUp,false);
+
+  // Pes et: aşk %40 -> %0; sonra mevcut kaybetme ekranı.
+  loveHud.classList.add('show','finalMode');
+  loveFill.style.width='40%';
+  lovePct.textContent='40%';
+  plus20.classList.add('finalMode');
+
+  later(()=>{
+    plus20.textContent='-40';
+    plus20.classList.remove('pop');
+    void plus20.offsetWidth;
+    plus20.classList.add('pop');
+    loveFill.style.width='0%';
+
+    let n=40;
+    const iv=setInterval(()=>{
+      n--;
+      lovePct.textContent=n+'%';
+      if(n<=0){
+        clearInterval(iv);
+        later(()=>{
+          loveHud.classList.remove('show','finalMode');
+          plus20.classList.remove('finalMode');
+          lose();
+        },500);
+      }
+    },26);
+  },250);
+}
+
+hungerEat.addEventListener('click',goKisir);
+hungerContinue.addEventListener('click',goStarve);
+starveRetry.addEventListener('click',backToHunger);
+starveGiveUp.addEventListener('click',giveUpFromHunger);
+proposalA.addEventListener('click',chooseProposalA);
+proposalB.addEventListener('click',chooseProposalB);
+endRestart.addEventListener('click',start);
+
+/* Bu kol burada kapanır: iki seçenek de mevcut HAYATININ AŞKINI KAÇIRDIN ekranına gider. */
+leaveSleep.addEventListener('click',lose);
+leaveOtherRoom.addEventListener('click',lose);
+
+retry.addEventListener('click',start);
+restartAlways.addEventListener('click',start);
+start();
+</script>
+</body>
+</html>
